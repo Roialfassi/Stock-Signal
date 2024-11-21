@@ -126,18 +126,23 @@ class StockApp:
             if symbol in self.stocks:
                 messagebox.showinfo("Info", f"{symbol} is already being tracked.")
                 return
-            # Validate the symbol
+            # Validate the symbol by attempting to fetch recent historical data
             try:
                 ticker = yf.Ticker(symbol)
-                info = ticker.info
-                if 'regularMarketPrice' not in info or info['regularMarketPrice'] is None:
-                    raise ValueError("Invalid stock symbol.")
+                hist = ticker.history(period="1d", interval="1m")
+                if hist.empty:
+                    raise ValueError("Invalid stock symbol or no data available.")
+                # If validation passes, add the stock
                 self.stocks.append(symbol)
                 self.save_stocks()
                 self.tree.insert("", tk.END, values=(symbol, "Loading...", "Loading...", "Loading...", ""))
-                self.log_action(f"Added stock {symbol}")
+                self.stop_updates()
+                self.start_updates()
+                # self.log_action(f"Added stock {symbol}", tag='info')
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to add stock {symbol}: {e}")
+                self.log_action(f"Failed to add stock {symbol}: {e}", tag='error')
+
 
     def remove_stock(self):
         """Remove selected stock(s)."""
